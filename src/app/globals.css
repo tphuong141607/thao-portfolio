@@ -14,13 +14,53 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    /* --background: #0a0a0a; */
     --foreground: #ededed;
   }
 }
 
 body {
-  background: var(--background);
+  /* Use background-color instead of the shorthand `background` so
+     background-image set by utilities (e.g. Tailwind's `bg-[url(...)]`)
+     isn't overwritten by this global rule. */
+  margin: 0;
+  background-color: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes typing {
+  from {
+    width: 0
+  }
+
+  to {
+    width: 100%
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0
+  }
+}
+
+.typing {
+  display: inline-flex;
+  align-items: baseline
+}
+
+.typing-text {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: typing 3s steps(40, end) forwards
+}
+
+.caret {
+  width: 1px;
+  height: 1em;
+  margin-left: 2px;
+  background: rgba(0, 0, 0, .7);
+  animation: blink 1s steps(1, end) infinite
 }
