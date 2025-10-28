@@ -1,17 +1,44 @@
-## Supabase-backed content
+# Thao Phuong – Portfolio
 
-Blog posts and craft projects now load exclusively from Supabase when the following environment variables are provided:
+Next.js 15 app that powers my personal site. Content lives in Supabase: blog posts, craft projects, and detailed case studies. The site includes admin “studios” for managing everything without touching source.
+
+## Tech Stack
+
+- Next.js App Router (React Server Components + client-side dashboards)
+- Supabase (Postgres + pgvector, auth helpers)
+- Tailwind (utility classes via `globals.css`)
+- CSV export script for seeding Supabase
+
+## Getting Started
+
+1. **Install dependencies**
+
+```bash
+npm install
+```
+
+2. **Environment**
+
+Create `.env.local` with your Supabase credentials:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="public-anon-key"
 ```
 
-Add them to `.env.local`, restart the dev server, and the site will sync with the tables below. Without these keys the UI renders empty states, so populate Supabase (or import the CSV seed files described below) before testing.
+3. **Run dev server**
 
-### Table definitions
+```bash
+npm run dev
+```
 
-Create the tables with SQL (adjust types or names as you see fit):
+Visit `http://localhost:3000`.
+
+Supabase credentials are required—without them the studios show empty states.
+
+## Database Schema
+
+Run these SQL statements in Supabase:
 
 ```sql
 create table if not exists public.blog_posts (
@@ -57,45 +84,69 @@ create table if not exists public.craft_case_studies (
   updated_at timestamptz default timezone('utc', now())
 );
 
--- enable Row Level Security (default) and allow anonymous reads
 alter table public.blog_posts enable row level security;
 alter table public.craft_projects enable row level security;
+alter table public.craft_case_studies enable row level security;
 
 create policy "Allow anon read blog posts"
   on public.blog_posts
-  for select
-  using (true);
+  for select using (true);
 
 create policy "Allow anon read craft projects"
   on public.craft_projects
-  for select
-  using (true);
+  for select using (true);
 
 create policy "Allow anon read craft case studies"
   on public.craft_case_studies
-  for select
-  using (true);
+  for select using (true);
 ```
 
-Populate them with your content either through the Supabase dashboard or SQL inserts. The `/blog/manage` and `/craft/manage` dashboards use these tables for CRUD operations.
+## Admin Dashboards
 
-### Sample data
+- `/blog/manage` – create/edit/delete blog posts (rich text via Quill).
+- `/craft/manage` – manage craft projects (list view) and linked case studies (JSON for overview/hero/sections).
+- `/login` – sign-in page for Supabase auth (uses email/password).
 
-Run the helper script to generate CSVs you can import into Supabase:
+Make sure your Supabase auth tables have a user before visiting manage routes.
+
+## Seeding Content
+
+Generate CSVs from the latest in-repo seed data:
 
 ```bash
 node scripts/export-supabase-csv.js
 ```
 
-The files are written to `supabase_seed/` (`blog_posts.csv`, `craft_projects.csv`, `craft_case_studies.csv`).
+Files land in `supabase_seed/` (`blog_posts.csv`, `craft_projects.csv`, `craft_case_studies.csv`). Import them through the Supabase Dashboard (table → Import data).
 
-## Getting Started
+## Project Structure
 
-Install dependencies and start the dev server:
-
-```bash
-npm install
-npm run dev
+```
+src/
+  app/                 # Next routes (app router)
+  components/          # Reusable UI (navbar, hero, etc.)
+  db/
+    schema/            # TypeScript interfaces mirroring Supabase tables
+    types.ts           # Row types + mapping helpers
+  features/
+    blog/              # Blog components, provider, queries
+    craft/             # Craft showcase, studio dashboards, queries/mutations
+  lib/                 # Shared utilities (supabase client factories, fonts)
+  providers/           # Global providers (AuthProvider)
+scripts/
+  export-supabase-csv.js
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) to view the site.
+## Authentication
+
+`AuthProvider` wraps the app and uses Supabase client-side auth helpers. `useAuth()` provides `{ user, loading, signIn, signOut }`.
+
+- `AuthProvider` needs Supabase env vars (same as main app).
+- Studios rely on `useAuth()` to guard access.
+
+## Deployment Notes
+
+- Ensure Supabase anon key is available as env var on your host.
+- For Vercel/Netlify, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- If you extract a separate RAG service later, connect via API routes (`/api/rag/*`) to keep credentials off the client.
+
